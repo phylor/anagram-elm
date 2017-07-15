@@ -1,0 +1,86 @@
+module App exposing (..)
+
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (..)
+
+type alias Anagram =
+  { solutions : List String
+  , submissions : List String
+  , characters : List Char
+  }
+
+type alias Model =
+  { currentAnagram : Anagram
+  , currentWord : String
+  , gameWon : Bool
+  }
+
+type Msg = CharacterClicked Char
+         | ClearWord
+         | NewGame
+
+init =
+  (Model (Anagram [ "aeo", "eoa", "oae" ] [] ['a', 'e', 'o']) "" False, Cmd.none)
+
+buttons anagram =
+  List.map (\c -> button [ onClick <| CharacterClicked c ] [ text <| String.fromChar c ]) anagram.characters
+
+view model =
+  div []
+    [ Html.node "link" [ rel "stylesheet", href "style.css" ] []
+    , Html.node "meta" [ name "viewport", content "width=device-width, initial-scale=1.0" ] []
+    , if model.gameWon then
+        div []
+          [ div [] [ text "Won!" ]
+          , button [ onClick NewGame ] [ text "New Game" ]
+          ]
+      else
+        div []
+          [ div [] (List.map (\submission -> div [] [ text submission ]) model.currentAnagram.submissions)
+          , div [] (List.map (\missingWord -> div [] [ text missingWord ]) <| missingWords model)
+          , div [ class "currentWord" ] [ text <| if String.length model.currentWord > 0 then model.currentWord else "..." ]
+          , div [ class "characterButtons" ] <| buttons model.currentAnagram
+          , button [ onClick ClearWord ] [ text "Clear" ]
+          ]
+    ]
+
+update : Msg -> Model -> (Model, Cmd Msg)
+update msg model =
+  case msg of
+    CharacterClicked c ->
+      let
+        newWord = String.append model.currentWord (String.fromChar c)
+        solutionFound = isSolution model.currentAnagram newWord
+        newSubmissions = if solutionFound then newWord :: model.currentAnagram.submissions else model.currentAnagram.submissions
+        newerWord = if solutionFound then "" else newWord
+        newGameWon = gameDone model.currentAnagram.solutions newSubmissions
+      in
+        ({ model | currentWord = newerWord, currentAnagram = updateAnagram model.currentAnagram newSubmissions, gameWon = newGameWon }, Cmd.none)
+
+    ClearWord ->
+      ({ model | currentWord = "" }, Cmd.none)
+
+    NewGame ->
+      init
+
+missingWords model =
+  List.map (\word -> String.fromList <| List.repeat (String.length word) '-') <| List.filter (\solution -> not <| List.member solution model.currentAnagram.submissions) model.currentAnagram.solutions
+
+updateAnagram anagram submissions =
+  { anagram | submissions = submissions }
+
+isSolution anagram word =
+  List.member word anagram.solutions
+
+gameDone solutions submissions =
+  List.length solutions == List.length submissions
+
+main : Program Never Model Msg
+main =
+  program
+    { init = init
+    , view = view
+    , update = update
+    , subscriptions = \model -> Sub.none
+    }
