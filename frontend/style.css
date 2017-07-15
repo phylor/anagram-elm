@@ -11,10 +11,15 @@ body {
 .characterButtons button {
   padding: 2rem;
   margin: 0.5rem;
+  width: 5rem;
 }
 
 .currentWord {
   color: rgb(216, 47, 107);
+}
+
+.words {
+  column-count: 2;
 }
 
 button {

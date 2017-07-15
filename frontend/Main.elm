@@ -4,16 +4,13 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 
-type alias Anagram =
-  { solutions : List String
-  , submissions : List String
-  , characters : List Char
-  }
+import Anagrams exposing (..)
 
 type alias Model =
   { currentAnagram : Anagram
   , currentWord : String
   , gameWon : Bool
+  , submissions : List String
   }
 
 type Msg = CharacterClicked Char
@@ -21,7 +18,7 @@ type Msg = CharacterClicked Char
          | NewGame
 
 init =
-  (Model (Anagram [ "aeo", "eoa", "oae" ] [] ['a', 'e', 'o']) "" False, Cmd.none)
+  (Model randomAnagram "" False [], Cmd.none)
 
 buttons anagram =
   List.map (\c -> button [ onClick <| CharacterClicked c ] [ text <| String.fromChar c ]) anagram.characters
@@ -37,8 +34,10 @@ view model =
           ]
       else
         div []
-          [ div [] (List.map (\submission -> div [] [ text submission ]) model.currentAnagram.submissions)
-          , div [] (List.map (\missingWord -> div [] [ text missingWord ]) <| missingWords model)
+          [ div [ class "words" ]
+              [ div [] (List.map (\submission -> div [] [ text submission ]) model.submissions)
+              , div [] (List.map (\missingWord -> div [] [ text missingWord ]) <| missingWords model)
+              ]
           , div [ class "currentWord" ] [ text <| if String.length model.currentWord > 0 then model.currentWord else "..." ]
           , div [ class "characterButtons" ] <| buttons model.currentAnagram
           , button [ onClick ClearWord ] [ text "Clear" ]
@@ -52,11 +51,11 @@ update msg model =
       let
         newWord = String.append model.currentWord (String.fromChar c)
         solutionFound = isSolution model.currentAnagram newWord
-        newSubmissions = if solutionFound then newWord :: model.currentAnagram.submissions else model.currentAnagram.submissions
+        newSubmissions = if solutionFound then newWord :: model.submissions else model.submissions
         newerWord = if solutionFound then "" else newWord
         newGameWon = gameDone model.currentAnagram.solutions newSubmissions
       in
-        ({ model | currentWord = newerWord, currentAnagram = updateAnagram model.currentAnagram newSubmissions, gameWon = newGameWon }, Cmd.none)
+        ({ model | currentWord = newerWord, submissions = newSubmissions, gameWon = newGameWon }, Cmd.none)
 
     ClearWord ->
       ({ model | currentWord = "" }, Cmd.none)
@@ -65,13 +64,10 @@ update msg model =
       init
 
 missingWords model =
-  List.map (\word -> String.fromList <| List.repeat (String.length word) '-') <| List.filter (\solution -> not <| List.member solution model.currentAnagram.submissions) model.currentAnagram.solutions
-
-updateAnagram anagram submissions =
-  { anagram | submissions = submissions }
+  List.map (\word -> String.fromList <| List.repeat (String.length word) '-') <| List.filter (\solution -> not <| List.member solution model.submissions) model.currentAnagram.solutions
 
 isSolution anagram word =
-  List.member word anagram.solutions
+  List.member word <| List.map (\solution -> String.toLower solution) anagram.solutions
 
 gameDone solutions submissions =
   List.length solutions == List.length submissions
