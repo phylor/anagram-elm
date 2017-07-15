@@ -50,7 +50,7 @@ update msg model =
     CharacterClicked c ->
       let
         newWord = String.append model.currentWord (String.fromChar c)
-        solutionFound = isSolution model.currentAnagram newWord
+        solutionFound = (isSolution model.currentAnagram newWord) && (not <| List.member newWord model.submissions)
         newSubmissions = if solutionFound then newWord :: model.submissions else model.submissions
         newerWord = if solutionFound then "" else newWord
         newGameWon = gameDone model.currentAnagram.solutions newSubmissions
