@@ -29,3 +29,7 @@ button {
   font-size: 2rem;
   color: rgb(216, 47, 107);
 }
+
+*:focus {
+  outline: none;
+}
