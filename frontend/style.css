@@ -9,9 +9,17 @@ body {
 }
 
 .characterButtons button {
-  padding: 2rem;
   margin: 0.5rem;
   width: 5rem;
+  height: 5rem;
+}
+
+.giveUp {
+  margin-top: 20vh;
+}
+
+.giveUp button {
+  font-size: 1rem;
 }
 
 .currentWord {

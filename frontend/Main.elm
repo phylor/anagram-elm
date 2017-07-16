@@ -62,7 +62,9 @@ viewPlaying model =
     , div [ class "currentWord" ] [ text <| if String.length model.currentWord > 0 then model.currentWord else "..." ]
     , div [ class "characterButtons" ] <| buttons model.currentAnagram
     , button [ onClick ClearWord ] [ text "Clear" ]
-    , button [ onClick GiveUp ] [ text "Give up" ]
+    , div [ class "giveUp" ]
+        [ button [ onClick GiveUp ] [ text "Give up" ]
+        ]
     ]
 
 update : Msg -> Model -> (Model, Cmd Msg)
