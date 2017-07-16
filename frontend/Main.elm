@@ -5,20 +5,22 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 
 import Anagrams exposing (..)
+import Game exposing (..)
 
 type alias Model =
   { currentAnagram : Anagram
   , currentWord : String
-  , gameWon : Bool
   , submissions : List String
+  , state : GameState
   }
 
 type Msg = CharacterClicked Char
          | ClearWord
          | NewGame
+         | GiveUp
 
 init =
-  (Model randomAnagram "" False [], Cmd.none)
+  (Model randomAnagram "" [] Menu, Cmd.none)
 
 buttons anagram =
   List.map (\c -> button [ onClick <| CharacterClicked c ] [ text <| String.fromChar c ]) anagram.characters
@@ -27,21 +29,37 @@ view model =
   div []
     [ Html.node "link" [ rel "stylesheet", href "style.css" ] []
     , Html.node "meta" [ name "viewport", content "width=device-width, initial-scale=1.0" ] []
-    , if model.gameWon then
-        div []
-          [ div [] [ text "Won!" ]
-          , button [ onClick NewGame ] [ text "New Game" ]
-          ]
-      else
-        div []
-          [ div [ class "words" ]
-              [ div [] (List.map (\submission -> div [] [ text submission ]) model.submissions)
-              , div [] (List.map (\missingWord -> div [] [ text missingWord ]) <| missingWords model)
-              ]
-          , div [ class "currentWord" ] [ text <| if String.length model.currentWord > 0 then model.currentWord else "..." ]
-          , div [ class "characterButtons" ] <| buttons model.currentAnagram
-          , button [ onClick ClearWord ] [ text "Clear" ]
-          ]
+    , case model.state of
+        Menu ->
+          viewMenu
+        Playing ->
+          viewPlaying model
+        Won ->
+          viewGameWon
+    ]
+
+viewMenu =
+  div []
+    [ div [] [ text "Menu" ]
+    , button [ onClick NewGame ] [ text "New Game" ]
+    ]
+
+viewGameWon =
+  div []
+    [ div [] [ text "Won!" ]
+    , button [ onClick NewGame ] [ text "New Game" ]
+    ]
+
+viewPlaying model =
+  div []
+    [ div [ class "words" ]
+        [ div [] (List.map (\submission -> div [] [ text submission ]) model.submissions)
+        , div [] (List.map (\missingWord -> div [] [ text missingWord ]) <| missingWords model)
+        ]
+    , div [ class "currentWord" ] [ text <| if String.length model.currentWord > 0 then model.currentWord else "..." ]
+    , div [ class "characterButtons" ] <| buttons model.currentAnagram
+    , button [ onClick ClearWord ] [ text "Clear" ]
+    , button [ onClick GiveUp ] [ text "Give up" ]
     ]
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -53,15 +71,21 @@ update msg model =
         solutionFound = (isSolution model.currentAnagram newWord) && (not <| List.member newWord model.submissions)
         newSubmissions = if solutionFound then newWord :: model.submissions else model.submissions
         newerWord = if solutionFound then "" else newWord
-        newGameWon = gameDone model.currentAnagram.solutions newSubmissions
+        newGameWon = if gameDone model.currentAnagram.solutions newSubmissions then Won else Playing
       in
-        ({ model | currentWord = newerWord, submissions = newSubmissions, gameWon = newGameWon }, Cmd.none)
+        ({ model | currentWord = newerWord, submissions = newSubmissions, state = newGameWon }, Cmd.none)
 
     ClearWord ->
       ({ model | currentWord = "" }, Cmd.none)
 
     NewGame ->
-      init
+      let
+        ( model, cmd ) = init
+      in
+        ( { model | state = Playing }, cmd )
+
+    GiveUp ->
+      ( { model | state = Menu }, Cmd.none )
 
 missingWords model =
   List.map (\word -> String.fromList <| List.repeat (String.length word) '-') <| List.filter (\solution -> not <| List.member solution model.submissions) model.currentAnagram.solutions
