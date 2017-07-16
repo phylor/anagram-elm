@@ -1,5 +1,7 @@
 module Anagrams exposing (..)
 
+import Random exposing (Generator)
+
 type alias Anagram =
   { characters : List Char
   , solutions : List String
@@ -13,5 +15,10 @@ anagrams =
   , Anagram [ 'a', 'e', 'g', 'n', 'r' ] [ "Anger", "Garne", "Nager", "argen", "garen", "ragen" ]
   ]
 
+randomAnagram : Generator Anagram
 randomAnagram =
-  Maybe.withDefault (Anagram [] []) <| List.head anagrams
+  Random.map (\index -> getAnagram index) (Random.int 0 (List.length anagrams - 1))
+
+getAnagram index =
+  Maybe.withDefault (Anagram [] []) <| List.head <| List.drop index anagrams
+ 

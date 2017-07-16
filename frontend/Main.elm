@@ -3,6 +3,7 @@ module App exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Random
 
 import Anagrams exposing (..)
 import Game exposing (..)
@@ -18,9 +19,11 @@ type Msg = CharacterClicked Char
          | ClearWord
          | NewGame
          | GiveUp
+         | RandomAnagram
+         | NewAnagram Anagram
 
 init =
-  (Model randomAnagram "" [] Menu, Cmd.none)
+  (Model (Anagram [] []) "" [] Menu, Cmd.none)
 
 buttons anagram =
   List.map (\c -> button [ onClick <| CharacterClicked c ] [ text <| String.fromChar c ]) anagram.characters
@@ -82,10 +85,16 @@ update msg model =
       let
         ( model, cmd ) = init
       in
-        ( { model | state = Playing }, cmd )
+        ( { model | state = Playing }, Random.generate NewAnagram randomAnagram )
 
     GiveUp ->
       ( { model | state = Menu }, Cmd.none )
+
+    RandomAnagram ->
+      ( model, Random.generate NewAnagram randomAnagram )
+
+    NewAnagram anagram ->
+      ( { model | currentAnagram = anagram }, Cmd.none )
 
 missingWords model =
   List.map (\word -> String.fromList <| List.repeat (String.length word) '-') <| List.filter (\solution -> not <| List.member solution model.submissions) model.currentAnagram.solutions
